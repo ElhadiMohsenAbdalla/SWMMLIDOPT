@@ -84,8 +84,85 @@ plot_rain_runoff_flood = function(inp){
   plot(out1, type="l", lwd=2, ylim=c(0, max(out1)*2),col="blue",
        xlab = "", ylab = "")
   lines(flood1, col="red",lty=1,lwd=2)
-  legend("topleft",legend = c("Precipitation","Outflow","Flooding"),lwd=c(7,3,3),
+  legend("topright",legend = c("Precipitation","Outflow","Flooding"),lwd=c(7,3,3),
          col=c("lightblue","blue","red"),lty=1)
+}
+
+# plot rainfall_runoff for LID scario compared with no LID 
+
+rainfall_runoff_par <- function(x, inp,cost1){
+  
+  tmp_inp <- tempfile()
+  write_inp(inp, tmp_inp)
+  swmm_files <- run_swmm(tmp_inp,exec = exc, stdout = NULL)
+  out1 <- read_out(
+    file = swmm_files$out,
+    iType =3,
+    vIndex = 11
+  )$system_variable$total_outflow_from_outfalls 
+  Urban_NoLID <- as.array(coredata(out1))
+  
+  p <- read_out(
+    file = swmm_files$out,
+    iType =3,
+    vIndex = 1
+  )$system_variable$total_rainfall
+  p <- as.array(coredata(p))
+  
+  
+  
+  area1 = inp$subcatchments$Area * 10000
+  n = length(area1)
+  area_array = array()
+  k = 1
+  kj = 1
+  
+  
+  for(i in 1:nrow(inp$lid_usage)){
+    
+    sub1 = inp$lid_usage$Subcatchment[i]
+    area1 = inp$subcatchments$Area[which(inp$subcatchments$Name ==sub1)] * 10000
+    
+    area_array[i] = x[i] * area1
+    
+  }
+  
+  num1 = area_array/inp$lid_usage$Area
+  inp$lid_usage <- transform(
+    inp$lid_usage,
+    Number = num1
+  )
+  tmp_inp <- tempfile()
+  write_inp(inp, tmp_inp)
+  swmm_files <- run_swmm(tmp_inp,exec = exc, stdout = NULL)
+  #on.exit(file.remove(unlist(swmm_files)), add = TRUE)
+  sim <- read_out(
+    file = swmm_files$out,
+    iType =3,
+    vIndex = 11
+  )$system_variable$total_outflow_from_outfalls
+  
+  
+  
+  sim <- as.array(coredata(sim))
+  
+  Urban_LID = as.matrix(sim)
+  main1 = paste0("Total cost = ", cost1,"k USD")
+  
+  plot(p, type="h", ylim=c(max(p)*2,0),
+       axes=FALSE, xlab=NA, ylab= NA, col="lightblue",
+       lwd=5, lend="square")
+  #axis(side=4)
+  mtext("", side = 4, line = 3)
+  par(new=TRUE)
+  plot(Urban_NoLID, type="l", lwd=2, ylim=c(0, max(out1)*2),col="red",
+       xlab = "", ylab = "")
+  lines(Urban_LID, col="blue",lty=1,lwd=2)
+  legend("topright",legend = c("Precipitation","With LID","No LID"),lwd=c(7,3,3),
+         col=c("lightblue","blue","red"),lty=1)
+  
+  
+  #on.exit(file.remove(unlist(swmm_files)), add = TRUE)
 }
 
 # Calculate the area of LID solution 
@@ -606,12 +683,40 @@ server <- function(input, output){
   
   #3. Multi objective ####################### 
   
+  # 1.4.3 interactive table 
+  den_df <- reactive({
+    
+    inFile <- input$file2
+    if(length(inFile)>0){
+    inp <- read_inp(inFile$datapath)
+   
+      data.frame(
+        LID =unique(inp$lid_usage$`LID Process`),
+        Density = shinyInput(selectInput, length(unique(inp$lid_usage$`LID Process`)),
+                             'select_den', choices = seq(0,1,0.1), width = "100px"),
+        `Unit cost` = shinyInput(selectInput, length(unique(inp$lid_usage$`LID Process`)),
+                                 'select_cost', choices = seq(0,200,1), width = "100px"),
+        stringsAsFactors = FALSE
+      )
+    }
+    
+  })
+  
+  output$Uplim <- DT::renderDataTable(
+    den_df(), rownames = FALSE, escape = FALSE, options = list(
+      autoWidth = TRUE, scrollX = TRUE, #scrollY = '400px',
+      dom = 't', ordering = FALSE,
+      preDrawCallback = JS('function() { Shiny.unbindAll(this.api().table().node()); }'),
+      drawCallback = JS('function() { Shiny.bindAll(this.api().table().node()); } '))
+    
+  )
+  
+  
   res2 = eventReactive(input$act2, {
     
     inFile <- input$file2
+    if(length(inFile)>0){
     inp <- read_inp(inFile$datapath) 
-    
-    if(length(inp)>0){
       peak_fun <- function(x,inp){
         n = nrow(inp$subcatchments)
         
@@ -756,13 +861,8 @@ server <- function(input, output){
   }) 
   
   output$MultiOpt <- renderText({ 
-    
-    
     inFile <- input$file2
-    inp <- read_inp(inFile$datapath) 
-    
-    if(length(inp)>0){
-      
+    if(length(inFile)>0){
       res = res2()
       if(length(res)>0){
         print("Optimization is finished. Please export the results")
@@ -797,16 +897,11 @@ server <- function(input, output){
     inFile <- input$file5
     res5 <- list.load(inFile$datapath)
     if(length(res5)>0){
-      
       inFile <- input$file6
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
-      
-      if(length(inp)>0){
-        
-        
         x = res5$parameters
         sff <- inp_to_sf(inp)
-        
         shape1 = sff[[1]]
         k = 1
         for(i in 1:length(shape1$Name)){
@@ -815,16 +910,10 @@ server <- function(input, output){
             k = k+1
           }
         }
-        
         ar1 = aggregate(shape1$Number,by=list(shape1$Name),FUN = "sum")
         Shape2 = shape1[!duplicated(shape1[ , "Name"]),]
-        
         colnames(ar1) = c("Name","x")
-        
-        
         Shape3 = full_join(Shape2, ar1, by = "Name")
-        
-        
         p1 = ggplot(Shape3, aes(fill = x)) +
           geom_sf()+ 
           scale_fill_gradient(
@@ -833,13 +922,9 @@ server <- function(input, output){
             na.value = "white"
           ) + ggtitle("Overall density")+
           theme_void()+labs(fill = "LID density (ratio)")
-        
         ggplotly(p1)
-        
-        
       }
     }
-   
   })
 
   output$pareto_front <- renderPlotly({
@@ -965,8 +1050,8 @@ server <- function(input, output){
   output$Rainfall_Runoff_pareto <- renderPlot({
     
     inFile <- input$file3
+    if(length(inFile)>0){
     res3 <- list.load(inFile$datapath)
-    if(length(res3)>0){
       if(length(which(res3$pareto=="FALSE")[1])>1){
         ind1 = which(res3$pareto=="FALSE")[1] -1 
       }else{
@@ -977,94 +1062,12 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
-      
-      if(length(inp)>0){
-     
-        
         y = as.numeric(input$num6)   
-        
         params = as.data.frame(res3$parameters)
-        
         x = t(params[y,])
-     
-      #print(x)
        cost1 =  res3$objectives[y,1]
-      rainfall_runoff_par <- function(x, inp,cost1){
-        
-        tmp_inp <- tempfile()
-        write_inp(inp, tmp_inp)
-        swmm_files <- run_swmm(tmp_inp,exec = exc, stdout = NULL)
-        out1 <- read_out(
-          file = swmm_files$out,
-          iType =3,
-          vIndex = 11
-        )$system_variable$total_outflow_from_outfalls 
-        Urban_NoLID <- as.array(coredata(out1))
-        
-        p <- read_out(
-          file = swmm_files$out,
-          iType =3,
-          vIndex = 1
-        )$system_variable$total_rainfall
-        p <- as.array(coredata(p))
-  
-        
-        
-        area1 = inp$subcatchments$Area * 10000
-        n = length(area1)
-        area_array = array()
-        k = 1
-        kj = 1
-        
-        
-        for(i in 1:nrow(inp$lid_usage)){
-          
-          sub1 = inp$lid_usage$Subcatchment[i]
-          area1 = inp$subcatchments$Area[which(inp$subcatchments$Name ==sub1)] * 10000
-          
-          area_array[i] = x[i] * area1
-          
-        }
-        
-        num1 = area_array/inp$lid_usage$Area
-        inp$lid_usage <- transform(
-          inp$lid_usage,
-          Number = num1
-        )
-        tmp_inp <- tempfile()
-        write_inp(inp, tmp_inp)
-        swmm_files <- run_swmm(tmp_inp,exec = exc, stdout = NULL)
-        #on.exit(file.remove(unlist(swmm_files)), add = TRUE)
-        sim <- read_out(
-          file = swmm_files$out,
-          iType =3,
-          vIndex = 11
-        )$system_variable$total_outflow_from_outfalls
-        
-
-        
-        sim <- as.array(coredata(sim))
-    
-        Urban_LID = as.matrix(sim)
-        main1 = paste0("Total cost = ", cost1,"k USD")
-    
-        plot(p, type="h", ylim=c(max(p)*2,0),
-             axes=FALSE, xlab=NA, ylab= NA, col="lightblue",
-             lwd=5, lend="square")
-        #axis(side=4)
-        mtext("", side = 4, line = 3)
-        par(new=TRUE)
-        plot(Urban_NoLID, type="l", lwd=2, ylim=c(0, max(out1)*2),col="red",
-             xlab = "", ylab = "")
-        lines(Urban_LID, col="blue",lty=1,lwd=2)
-        legend("topleft",legend = c("Precipitation","With LID","No LID"),lwd=c(7,3,3),
-               col=c("lightblue","blue","red"),lty=1)
-        
-        
-        #on.exit(file.remove(unlist(swmm_files)), add = TRUE)
-      }
-      
       rainfall_runoff_par(x,inp,cost1)
       }
     }
@@ -1124,18 +1127,12 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
-      
-      if(length(inp)>0){
-        
-      
       y = as.numeric(input$num6)  
-     
       params = as.data.frame(res3$parameters)
-      
       x = t(params[y,])
       sff <- inp_to_sf(inp)
-      
       shape1 = sff[[1]]
       k = 1
       for(i in 1:length(shape1$Name)){
@@ -1170,8 +1167,8 @@ server <- function(input, output){
   compare_df <- reactive({
     
     inFile <- input$file4
+    if(length(inFile)>0){
     inp <- read_inp(inFile$datapath)
-    if(length(inp)>0){
       inFile <- input$file3
       res3 <- list.load(inFile$datapath)
       if(length(which(res3$pareto=="FALSE")[1])>1){
@@ -1219,10 +1216,8 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
-      
-      if(length(inp)>0){
-        
         dat2 <- data.frame(
           Solutions = paste0("Solution",c(1:5)),
           Number = shinyValue('select_pareto', 5)
@@ -1240,8 +1235,7 @@ server <- function(input, output){
       }
     }
   }) 
-  
-  
+
   output$pareto_plot2 <- renderPlotly({
     inFile <- input$file3
     res3 <- list.load(inFile$datapath)
@@ -1256,9 +1250,10 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
       
-      if(length(inp)>0){
+      
         
         dat2 <- data.frame(
           Solutions = paste0("Solution",c(1:5)),
@@ -1292,9 +1287,10 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
       
-      if(length(inp)>0){
+      
         
         dat2 <- data.frame(
           Solutions = paste0("Solution",c(1:5)),
@@ -1313,8 +1309,7 @@ server <- function(input, output){
       }
     }
   }) 
-  
-  
+
   output$pareto_plot4 <- renderPlotly({
     inFile <- input$file3
     res3 <- list.load(inFile$datapath)
@@ -1329,9 +1324,10 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
       
-      if(length(inp)>0){
+      
         
         dat2 <- data.frame(
           Solutions = paste0("Solution",c(1:5)),
@@ -1365,9 +1361,10 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
       
-      if(length(inp)>0){
+      
         
         dat2 <- data.frame(
           Solutions = paste0("Solution",c(1:5)),
@@ -1393,9 +1390,8 @@ server <- function(input, output){
   detailed1_df <- reactive({
     
     inFile <- input$file4
-    inp <- read_inp(inFile$datapath)
-    if(length(inp)>0){
-      
+    if(length(inFile)>0){
+      inp <- read_inp(inFile$datapath)
       inFile <- input$file3
       res3 <- list.load(inFile$datapath)
       if(length(which(res3$pareto=="FALSE")[1])>1){
@@ -1408,8 +1404,6 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       nn1 = nrow(res3$parameters)
-      
-      
       data.frame(
         Solutions =paste0("Solution 1"),
         Number = shinyInput(selectInput,1,
@@ -1438,12 +1432,24 @@ server <- function(input, output){
   detailed2_df <- reactive({
     
     inFile <- input$file4
-    inp <- read_inp(inFile$datapath)
-    if(length(inp)>0){
+    if(length(inFile)>0){
+      inp <- read_inp(inFile$datapath)
+      inFile <- input$file3
+      res3 <- list.load(inFile$datapath)
+      if(length(which(res3$pareto=="FALSE")[1])>1){
+        ind1 = which(res3$pareto=="FALSE")[1] -1 
+      }else{
+        ind1 = length(res3$pareto)
+      }
+      ind2 = order(res3$objectives[1:ind1,2])
+      res3$objectives = res3$objectives[ind2,]
+      res3$parameters =  res3$parameters[1:ind1,]
+      res3$parameters = res3$parameters[ind2,]
+      nn1 = nrow(res3$parameters)
       data.frame(
         Solutions =paste0("Solution 2"),
         Number = shinyInput(selectInput,1,
-                            'select_detaled2_sol', choices = c(NA,c(1:100)), width = "100px"),
+                            'select_detaled2_sol', choices = c(NA,c(1:nn1)), width = "100px"),
         LID = shinyInput(selectInput,1,
                          'select_detaled2_lid', choices = unique(inp$lid_usage$`LID Process`), width = "100px"),
         stringsAsFactors = FALSE
@@ -1451,6 +1457,7 @@ server <- function(input, output){
     }
     
   })
+  
   
   # 1.4.4 final output tags table 
   
@@ -1466,8 +1473,9 @@ server <- function(input, output){
   
   output$pareto_SOL1 <- renderPlotly({
     inFile <- input$file3
+    if(length(inFile)>0){
     res3 <- list.load(inFile$datapath)
-    if(length(res3)>0){
+    
       if(length(which(res3$pareto=="FALSE")[1])>1){
         ind1 = which(res3$pareto=="FALSE")[1] -1 
       }else{
@@ -1478,9 +1486,9 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
       
-      if(length(inp)>0){
         
         dat2 <- data.frame(
           Solutions = paste0("Solution 1"),
@@ -1500,8 +1508,9 @@ server <- function(input, output){
   
   output$pareto_SOL2 <- renderPlotly({
     inFile <- input$file3
+    if(length(inFile)>0){
     res3 <- list.load(inFile$datapath)
-    if(length(res3)>0){
+    
       if(length(which(res3$pareto=="FALSE")[1])>1){
         ind1 = which(res3$pareto=="FALSE")[1] -1 
       }else{
@@ -1512,9 +1521,10 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
       
-      if(length(inp)>0){
+     
         
         dat2 <- data.frame(
           Solutions = paste0("Solution 2"),
@@ -1534,8 +1544,9 @@ server <- function(input, output){
 
   output$pareto_com <- renderPlotly({
     inFile <- input$file3
+    if(length(inFile)>0){
     res3 <- list.load(inFile$datapath)
-    if(length(res3)>0){
+    
       if(length(which(res3$pareto=="FALSE")[1])>1){
         ind1 = which(res3$pareto=="FALSE")[1] -1 
       }else{
@@ -1546,9 +1557,10 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
       
-      if(length(inp)>0){
+   
         
         dat2 <- data.frame(
           Solutions = paste0("Solution 2"),
@@ -1573,8 +1585,9 @@ server <- function(input, output){
   
   output$barplot <- renderPlotly({
     inFile <- input$file3
+    if(length(inFile)>0){
     res3 <- list.load(inFile$datapath)
-    if(length(res3)>0){
+   
       if(length(which(res3$pareto=="FALSE")[1])>1){
         ind1 = which(res3$pareto=="FALSE")[1] -1 
       }else{
@@ -1585,9 +1598,10 @@ server <- function(input, output){
       res3$parameters =  res3$parameters[1:ind1,]
       res3$parameters = res3$parameters[ind2,]
       inFile <- input$file4
+      if(length(inFile)>0){
       inp <- read_inp(inFile$datapath) 
       
-      if(length(inp)>0){
+      
         
         dat2 <- data.frame(
           Solutions = paste0("Solution 2"),
