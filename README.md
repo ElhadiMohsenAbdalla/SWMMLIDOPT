@@ -23,7 +23,7 @@ To operate SWMMLIDOPT in your computer, the following must be installed:
 The following example illustrates the use of SWMMLIDopt tool for oprimization of LID measures. In this example we use NTNU_case_noLID.inp which can be downloaded from the example folder in this repository. Open the example NTNU_case_noLID.inp in your SWMM software to make sure that it is working. Next, open Rstudio and follow these steps 
 
 2. DOWNLOAD and open the SWMMLIDopt.R.
-![alt text](https://github.com/ElhadiMohsenAbdalla/SWMMLIDOPT/blob/[branch]/image.jpg?raw=true) 
+![alt text](https://github.com/ElhadiMohsenAbdalla/SWMMLIDOPT/tree/main/Figures/fig0.jpg?raw=true) 
 4. Click Run App bottom. 
 5. The following window should appear.
 6. Choose the inp file (i.e., the model created by SWMM software). In this exaple we use NTNU_case_noLID.inp. It is important that the inp file has no LID measures. 
