@@ -1,36 +1,38 @@
-library(shiny)
-library(shinydashboard)
-library(mco)
-library(nsga2R)
-library(swmmr)
-library(lubridate)
-library(zoo)
-library(factorial2x2)
-library(ggplot2)
-library(shinybusy)
-library(nloptr)
-library(ggpubr)
-library(rlang)
-library(igraph)
-library(DT)
-library(readxl)
-library(plotly)
-library(viridis)
-library(rio)
-library(dplyr)
-library(ggnewscale)
-library(shinyFiles)
-library(rlist)
-library(sf)
-##########Functions: #####################
+# list of Packages used in SWMMLIDOPT
+listOfPackages <- c("remotes","shiny","shinydashboard","mco","nsga2R","swmmr",
+                    "lubridate","zoo","factorial2x2","ggplot2",
+                    "shinybusy","ggpubr","rlang","DT","plotly",
+                    "viridis","rio","dplyr","ggnewscale",
+                    "shinyFiles","rlist","sf")
 
+for (i in listOfPackages){
+ 
+  if(! i %in% installed.packages()){
+    if(i == "swmmr"){
+      remotes::install_github("dleutnant/swmmr")
+    }else{
+      install.packages(i, dependencies = TRUE)
+    }
+    
+  }
+  require(i, character.only = TRUE)
+}
+
+##########Functions: #####################
+# Search for SWMM exc file
 swmm_exc = function(){
   pre <- list.files("C:/Program Files (x86)", "swmm5.exe|runswmm.exe", 
                     recursive=TRUE, full.names=TRUE, include.dirs=TRUE)
+  if(length(pre)==0){
+  pre <- list.files("C:/Program Files", "swmm5.exe|runswmm.exe", 
+                      recursive=TRUE, full.names=TRUE, include.dirs=TRUE)
+  }
   exc <- pre[ !grepl("epa", pre) ]
   return(exc)
 }
 exc = swmm_exc()
+
+# plot the catchment
 plot_catch = function(inp){
   sff <- inp_to_sf(inp)
   p = ggplot(sff[[1]]) +
@@ -46,24 +48,8 @@ plot_catch = function(inp){
   p1 = ggplotly(p)
   return(p1)
 }
-inital_fun <- function(inp){
-  tmp_inp <- tempfile()
-  write_inp(inp, tmp_inp)
-  swmm_files <- run_swmm(tmp_inp,exec = exc, stdout = NULL)
-  on.exit(file.remove(unlist(swmm_files)), add = TRUE)
-  
-  sim <- read_out(
-    file = swmm_files$out,
-    iType =3,
-    vIndex = 11
-  )$system_variable$total_outflow_from_outfalls
 
-  sim <- as.array(coredata(sim))
-  x = c(1:length(sim))
-  Urban = cbind.data.frame(x,sim)
-  colnames(Urban) = c("x","sim")
-  return(Urban)
-}
+# plot rainfall_runoff_flood figure
 plot_rain_runoff_flood = function(inp){
   tmp_inp <- tempfile()
   write_inp(inp, tmp_inp)
@@ -101,6 +87,8 @@ plot_rain_runoff_flood = function(inp){
   legend("topleft",legend = c("Precipitation","Outflow","Flooding"),lwd=c(7,3,3),
          col=c("lightblue","blue","red"),lty=1)
 }
+
+# Calculate the area of LID solution 
 cal_area = function(x,inp,lid1){
   total_area = 0
   shape1 = inp$lid_usage[which(inp$lid_usage$`LID Process`==lid1),]
@@ -114,6 +102,9 @@ cal_area = function(x,inp,lid1){
   return(total_area)
   
 }
+
+
+# Determine the peak runoff based on LID scenario x
 peak_fun <- function(x,inp){
   n = nrow(inp$subcatchments)
   data2 = cbind.data.frame(inp$lid_usage,x)
@@ -164,6 +155,8 @@ peak_fun <- function(x,inp){
   }
   
 }
+
+# Determine the total_cost of LID scenario x
 eval_f0 <- function(x,dat){
   total_cost = 0
   k =1
@@ -179,6 +172,8 @@ eval_f0 <- function(x,dat){
   }
   return(total_cost)
 }
+
+# Plot overall_density of LID scenario x
 plot_overall_density = function(inp,x,title1){
   sff <- inp_to_sf(inp)
   
@@ -209,6 +204,8 @@ plot_overall_density = function(inp,x,title1){
   
   return(p1)
 }
+
+# Plot the density of a specific LID measure (lid1) of a scenario x
 plot_lid_density = function(inp,x,lid1){
 
   sff <- inp_to_sf(inp)
@@ -237,6 +234,8 @@ plot_lid_density = function(inp,x,lid1){
   
   return(N0)
 }
+
+# Plot the difference of the LID density measure (lid1) between two scenarios x1 and x2
 plot_lid_density_diff = function(inp,x1,x2,lid1){
   
   sff <- inp_to_sf(inp)
@@ -271,7 +270,9 @@ plot_lid_density_diff = function(inp,x1,x2,lid1){
   
   return(N0)
 }
-##########UI: ############################
+
+
+##########UI: The user interface of the SWMMLIDopt ############################
 ui <- dashboardPage(
   dashboardHeader(title = "SWMMLIDopt"),
   dashboardSidebar(
