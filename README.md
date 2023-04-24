@@ -1,7 +1,7 @@
 # SWMMLIDOPT
 ### SWMMLIDopt: a tool for optimization of low impact development (LID) measures using the SWMM model
 
-The SWMMLIDOPT utilizes the Storm Water Management Model (SWMM) and provide a user-friendly environment for conducting multi-objective optimization of the selection and placement of LID measures in urban catchments.  
+The SWMMLIDOPT tool is developed in the EviBAN project (https://www.sintef.no/projectweb/eviban/). It uses the Storm Water Management Model (SWMM) and provides a user-friendly environment for conducting multi-objective optimization of the selection and placement of LID measures in urban catchments.  
 
 The SWMMLIDopt operates from a simplified user interface that prepares the optimization input, executes the multi-objective optimization, based on the total cost and reduction of peak drainage flow rates, and visualizes the optimization results. SWMMLIDopt is created using several R packages such as Shiny (creates interactive user interface with R), swmmr (prepares, executes, and reads results of SWMM models from R environment) and mco (solves multi-objective optimization problems using the non-dominated sorting genetic algorithm (NSGA-II)). 
 
