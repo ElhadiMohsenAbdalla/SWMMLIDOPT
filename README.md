@@ -18,6 +18,12 @@ To operate SWMMLIDOPT in your computer, the following must be installed:
     Alternatively, check the version of R in R studio>Tools>Global options ...>General 
 
 
+### How to use SWMMLIDopt
+
+The current version of SWMMLIDopt is underdevelopment. The following steps must be followed to run an oprimization with SWMMLIDopt: 
+
+1. DOWNLOAD and open the SWMMLIDopt.R in your PC
+2. 
 
 
 
