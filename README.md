@@ -26,6 +26,8 @@ The following example illustrates the use of SWMMLIDopt tool for oprimization of
 
 2. Click Run App bottom. 
 
+![ScreenShot](/Figures/fig0.JPG)
+
 3. The following window should appear.
 
 ![ScreenShot](/Figures/fig1.JPG)
