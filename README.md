@@ -25,7 +25,7 @@ The following example illustrates the use of SWMMLIDopt tool for oprimization of
 2. DOWNLOAD and open the SWMMLIDopt.R.
 4. Click Run App bottom. 
 5. The following window should appear.
-![alt text](https://github.com/ElhadiMohsenAbdalla/SWMMLIDOPT/tree/main/Figures/fig1.JPG?raw=true) 
+<img src="[image1.png](https://github.com/ElhadiMohsenAbdalla/SWMMLIDOPT/tree/main/Figures/fig1.JPG)" width="425"/>
 7. Choose the inp file (i.e., the model created by SWMM software). In this exaple we use NTNU_case_noLID.inp. It is important that the inp file has no LID measures. 
 8. The SWMMLIDopt will excute the model, plot the catchment, simulation results, and print the catchment characteristics as shown in the following figure
 9. In the box (Subcatchment tags), assign the land types of each catchment to one of the standard types in SWMMLIDOPT ('Parking', 'Roof','Vegetation','Road','Walkway') as shown in the following figure. Make sure that your .inp file contains tags for each catchment similar to the example provided here. It is possible to assign the same tag to many catchment in the inp file
