@@ -79,3 +79,7 @@ The following example illustrates the use of SWMMLIDopt tool for oprimization of
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
+
+
+# Acknowledgements 
+This work was supported by the EviBAN project (Evidence based assessment of NWRM for sustainable water management). EviBAN is funded under the Water JPI 2018 Joint Call - WaterWorks 2017 on “Closing the Water Cycle Gap – Sustainable Management of Water Resources”, the research council of Norway (grant no 300281), and the Academy of Finland (no 326787).
