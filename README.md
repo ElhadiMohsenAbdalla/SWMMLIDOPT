@@ -20,7 +20,7 @@ To operate SWMMLIDOPT in your computer, the following must be installed:
 
 ### How to use SWMMLIDopt
 
-The following example illustrates the use of SWMMLIDopt tool for oprimization of LID measures. In this example we use NTNU_case_noLID.inp which can be downloaded from the example folder in this repository. Open the example NTNU_case_noLID.inp in your SWMM software to make sure that it is working. Next, open Rstudio and follow these steps 
+The following example illustrates the use of SWMMLIDopt tool for optimization of LID measures. In this example we use NTNU_case_noLID.inp which can be downloaded from the example folder in this repository. Open the example NTNU_case_noLID.inp in your SWMM software to make sure that it is working. Next, open Rstudio and follow these steps 
 
 1. DOWNLOAD and open the SWMMLIDopt.R.
 
@@ -34,7 +34,7 @@ The following example illustrates the use of SWMMLIDopt tool for oprimization of
 
 4. Choose the inp file (i.e., the model created by SWMM software). In this example, we will use the NTNU_case_noLID.inp. It is important that the inp file has no LID measures. 
 
-5. The SWMMLIDopt will excute the model, plot the catchment, simulation results, and print the catchment characteristics as shown in the following figure
+5. The SWMMLIDopt will execute the model, plot the catchment, simulation results, and print the catchment characteristics as shown in the following figure
 
 ![ScreenShot](/Figures/fig2.JPG)
 
@@ -42,7 +42,7 @@ The following example illustrates the use of SWMMLIDopt tool for oprimization of
 
 ![ScreenShot](/Figures/fig3.JPG)
 
-7. The tab "LID creation tool" is used to create inp file with LID measures that are assigned based on user input. For example, As in the the following figure, four LID measures were selected: BR(Bioretenetion cell), GR(Green roof), PP (permeable pavement) and VS (vegetated swales). BR will be implemented in the land types 'Parking' and 'Vegetation', while GR will only be implemented in the land type 'Roof'. Click the bottom "Create LIDs and Export results" to export the .inp file with LID measures
+7. The tab "LID creation tool" is used to create inp file with LID measures that are assigned based on user input. For example, As in the following figure, four LID measures were selected: BR(Bioretenetion cell), GR(Green roof), PP (permeable pavement) and VS (vegetated swales). BR will be implemented in the land types 'Parking' and 'Vegetation', while GR will only be implemented in the land type 'Roof'. Click the bottom "Create LIDs and Export results" to export the .inp file with LID measures
 
 ![ScreenShot](/Figures/fig4b.JPG)
 
@@ -71,7 +71,7 @@ The following example illustrates the use of SWMMLIDopt tool for oprimization of
 ![ScreenShot](/Figures/fig11.JPG)
 
 
-14. In the tab "Details pareto solutions comparsion ", you can compare the desnity of specific LID measures between two pareto optimal solutions         
+14. In the tab "Details pareto solutions comparison ", you can compare the density of specific LID measures between two pareto optimal solutions         
 
 ![ScreenShot](/Figures/fig12.JPG)
 
@@ -83,3 +83,4 @@ The following example illustrates the use of SWMMLIDopt tool for oprimization of
 
 # Acknowledgements 
 This work was supported by the EviBAN project (Evidence based assessment of NWRM for sustainable water management). EviBAN is funded under the Water JPI 2018 Joint Call - WaterWorks 2017 on “Closing the Water Cycle Gap – Sustainable Management of Water Resources”, the research council of Norway (grant no 300281), and the Academy of Finland (no 326787).
+
